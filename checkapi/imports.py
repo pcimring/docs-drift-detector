@@ -22,7 +22,7 @@ def resolve_packages(code: str) -> list[str]:
             for alias in node.names:
                 top_level_modules.add(alias.name.split(".")[0])
         elif isinstance(node, ast.ImportFrom):
-            if node.module:
+            if node.module and node.level == 0:
                 top_level_modules.add(node.module.split(".")[0])
 
     packages = set()

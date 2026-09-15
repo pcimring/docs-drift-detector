@@ -19,3 +19,13 @@ def test_falls_back_to_hyphenated_module_name():
 def test_deduplicates_repeated_imports():
     code = "import numpy\nimport numpy as np\n"
     assert resolve_packages(code) == ["numpy"]
+
+
+def test_skips_relative_imports_with_submodule():
+    code = "from .utils import helper\nfrom ..pkg.mod import something\n"
+    assert resolve_packages(code) == []
+
+
+def test_skips_bare_relative_imports():
+    code = "from . import local_module\n"
+    assert resolve_packages(code) == []
