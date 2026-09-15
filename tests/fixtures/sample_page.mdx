@@ -1,0 +1,28 @@
+---
+title: Sample page
+---
+
+# Sample page
+
+Here's a step you'll need first:
+
+```python
+llm = ChatOpenAI(model="gpt-4o-mini")
+```
+
+Now here's the full example, self-contained:
+
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4o-mini")
+response = llm.invoke("Say hello in one word.")
+print(response.content)
+```
+
+And a JS example for a different reader:
+
+```js
+const x = 1;
+console.log(x);
+```
