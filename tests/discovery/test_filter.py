@@ -101,7 +101,7 @@ print(asyncio.run(guarded()))
 """
 
 # `registry` / `cached` are only ever read, so the global/nonlocal statement
-# is the only thing that can resolve them — which is the point of the test.
+# is the only thing that can resolve them, which is the point of the test.
 GLOBAL_DECLARATION = """
 import json
 

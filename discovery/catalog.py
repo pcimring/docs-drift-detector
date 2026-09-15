@@ -18,7 +18,7 @@ def upsert_catalog_entries(conn, target_project: str, doc_page: str, snippets: l
 
     Everything below runs in a single transaction (one commit at the end), so a
     page is never left half-pruned. Pruning is scoped to this exact
-    (target_project, doc_page) — other pages and other targets are untouched.
+    (target_project, doc_page), so other pages and other targets are untouched.
     """
     page_group_id = hashlib.sha256(f"{target_project}:{doc_page}".encode()).hexdigest()[:16]
     current_snippet_ids = []

@@ -7,10 +7,10 @@ BUILTIN_NAMES = set(dir(builtins))
 def is_runnable_candidate(code: str) -> bool:
     """Heuristic: does this snippet import something and resolve every name it uses?
 
-    Names are classified by `ctx` in a single walk. Every binding form that
-    produces a `Name` with `ctx=Store`/`Del` — plain assignment, annotated and
-    augmented assignment, `for` targets, `with`/`async with` `as` targets,
-    comprehension targets, walrus — is therefore covered by one rule, and only
+    Names are classified by `ctx` in a single walk. One rule therefore covers
+    every binding form that produces a `Name` with `ctx=Store`/`Del`: plain
+    assignment, annotated and augmented assignment, `for` targets,
+    `with`/`async with` `as` targets, comprehension targets and walrus. Only
     binders that produce no such `Name` node need explicit handling below.
 
     Reading `ctx` also fixes a false positive: in `obj.field = x` the store
