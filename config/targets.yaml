@@ -1,0 +1,4 @@
+langchain:
+  docs_repo: langchain-ai/docs
+  code_repo: langchain-ai/langchain
+  language: python
