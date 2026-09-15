@@ -60,3 +60,28 @@ def test_find_flagged_locations_excludes_only_the_specific_block_position():
     # Should return only line 2 (the first unchecked occurrence),
     # not silently drop it because identical text exists in the exclude_block
     assert flagged == [{"line": 2, "text": "old_call(x)"}]
+
+
+def test_find_flagged_locations_uses_rfind_tiebreak_when_exclude_block_is_ambiguous():
+    """
+    When exclude_block appears multiple times verbatim on the page,
+    rfind (last occurrence) is used by convention as a tiebreak.
+    This pins the behavior: the LAST occurrence is excluded, other occurrences are flagged.
+    """
+    page_text = (
+        "Step one:\n"
+        "old_call(x)\n"
+        "\n"
+        "Full example:\n"
+        "print('works')\n"
+        "\n"
+        "Another full example:\n"
+        "old_call(x)\n"
+    )
+    # exclude_block appears twice verbatim (lines 2 and 8) with no disambiguating context
+    exclude_block = "old_call(x)"
+
+    flagged = find_flagged_locations(page_text, "old_call", exclude_block)
+
+    # rfind chooses the LAST occurrence (line 8), so line 2 should be flagged
+    assert flagged == [{"line": 2, "text": "old_call(x)"}]
