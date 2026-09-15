@@ -10,7 +10,12 @@ EXECUTION_TIMEOUT_SECONDS = 30
 INSTALL_TIMEOUT_SECONDS = 60
 
 TRANSIENT_ERROR_PATTERN = re.compile(
-    r"RateLimitError|Timeout|ConnectionError|Service Unavailable|APIConnectionError|5\d\d",
+    r"RateLimitError|Timeout|ConnectionError|APIConnectionError|"
+    r"Service Unavailable|"
+    r"(?:Status|Code|Error)\s*:\s*5\d{2}|"
+    r"5\d{2}\s+(?:Server Error|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout|Too Many Requests)|"
+    r"(?:500|502|503|504|505)\s+(?:error|exception)|"
+    r"HTTP\s+5\d{2}",
     re.IGNORECASE,
 )
 

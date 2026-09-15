@@ -66,6 +66,52 @@ def test_is_transient_error_detects_provider_hiccups():
     assert is_transient_error("requests.exceptions.ConnectionError: reset") is True
 
 
+def test_is_transient_error_detects_http_status_codes():
+    # Real HTTP status codes with context should match
+    assert is_transient_error("HTTP 503 Service Unavailable") is True
+    assert is_transient_error("Status: 500 Internal Server Error") is True
+    assert is_transient_error("502 Bad Gateway") is True
+    assert is_transient_error("504 Gateway Timeout") is True
+
+
 def test_is_transient_error_false_for_genuine_bugs():
     assert is_transient_error("ValueError: boom") is False
     assert is_transient_error(None) is False
+
+
+def test_is_transient_error_rejects_coincidental_line_numbers():
+    # A traceback with a line number like 512 should NOT match as transient
+    traceback = """Traceback (most recent call last):
+  File "adapters.py", line 512, in send
+    raise ValueError("something went wrong")
+ValueError: something went wrong"""
+    assert is_transient_error(traceback) is False
+
+
+def test_execute_snippet_with_extra_sys_path(tmp_path):
+    # Create a simple module in tmp_path
+    module_dir = tmp_path / "mymodule"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("VALUE = 42")
+
+    # Execute snippet that imports from the module
+    code = """
+import sys
+from mymodule import VALUE
+print(f"got {VALUE}")
+"""
+    result = execute_snippet(code, extra_sys_path=tmp_path)
+    assert result.status == "pass"
+    assert "got 42" in result.stdout
+
+
+def test_execute_snippet_with_env(tmp_path):
+    # Pass a custom env var and verify snippet can read it
+    code = """
+import os
+val = os.environ.get("TEST_CUSTOM_VAR", "not_set")
+print(f"env_value:{val}")
+"""
+    result = execute_snippet(code, env={"TEST_CUSTOM_VAR": "my_test_value"})
+    assert result.status == "pass"
+    assert "env_value:my_test_value" in result.stdout
