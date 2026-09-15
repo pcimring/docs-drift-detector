@@ -1,0 +1,23 @@
+# Quickstart
+
+First, install the package:
+
+```bash
+pip install langchain-openai
+```
+
+Set up the model:
+
+```python
+llm = ChatOpenAI(model="gpt-4o-mini")
+```
+
+Here's the full, runnable example:
+
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4o-mini")
+response = llm.invoke("What is the capital of France?")
+print(response.content)
+```

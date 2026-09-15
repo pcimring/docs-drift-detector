@@ -1,0 +1,19 @@
+# Chat models
+
+Chat models take a list of messages:
+
+```python
+messages = [HumanMessage(content="Hi")]
+```
+
+Full example:
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+llm = ChatOpenAI(model="gpt-4o-mini")
+messages = [HumanMessage(content="Hi")]
+response = llm.invoke(messages)
+print(response.content)
+```
