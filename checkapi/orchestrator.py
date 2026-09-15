@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -5,7 +6,13 @@ from discovery.config import load_target
 
 from checkapi import fix_drafter, flagged_locations, github_source, imports, run_writer
 from checkapi.catalog_reader import get_page_group
-from checkapi.sandbox import ExecutionResult, execute_snippet, install_packages, is_transient_error
+from checkapi.sandbox import (
+    ExecutionResult,
+    HarnessError,
+    execute_snippet,
+    install_packages,
+    is_transient_error,
+)
 
 SUMMARY_KEYS = ("pass", "fail", "unresolved", "timeout", "inconclusive")
 
@@ -18,10 +25,19 @@ def run_in_sandbox(code: str) -> ExecutionResult:
 
 
 def check_snippet(snippet_text: str, page_text: str) -> tuple[str, str | None, str | None, list]:
-    result = run_in_sandbox(snippet_text)
+    try:
+        result = run_in_sandbox(snippet_text)
+    except (HarnessError, subprocess.TimeoutExpired) as exc:
+        # The harness itself failed (e.g. a guessed pip package name doesn't
+        # exist), not the snippet under test. Retrying a deterministic
+        # install failure won't help, so report inconclusive immediately.
+        return "inconclusive", str(exc), None, []
 
     if result.status == "fail" and is_transient_error(result.error_text):
-        result = run_in_sandbox(snippet_text)
+        try:
+            result = run_in_sandbox(snippet_text)
+        except (HarnessError, subprocess.TimeoutExpired) as exc:
+            return "inconclusive", str(exc), None, []
         if result.status == "fail" and is_transient_error(result.error_text):
             return "inconclusive", result.error_text, None, []
 

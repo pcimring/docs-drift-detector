@@ -2,7 +2,7 @@ from discovery.catalog import upsert_catalog_entries
 
 from checkapi import orchestrator
 from checkapi.fix_drafter import FixResult
-from checkapi.sandbox import ExecutionResult
+from checkapi.sandbox import ExecutionResult, HarnessError
 
 
 def _stub_sandbox(monkeypatch, results):
@@ -89,6 +89,20 @@ def test_check_snippet_genuine_failure_unresolved_when_fix_not_verified(monkeypa
 
     assert status == "unresolved"
     assert diff is None
+
+
+def test_check_snippet_harness_error_reported_as_inconclusive(monkeypatch):
+    def raise_harness_error(code):
+        raise HarnessError("pip install failed: No matching distribution found for old_call")
+
+    monkeypatch.setattr(orchestrator, "run_in_sandbox", raise_harness_error)
+
+    status, error_text, diff, flagged = orchestrator.check_snippet("import old_call", "page text")
+
+    assert status == "inconclusive"
+    assert "pip install failed" in error_text
+    assert diff is None
+    assert flagged == []
 
 
 def test_check_page_writes_a_run_record_per_snippet(monkeypatch, db_conn):
