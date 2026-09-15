@@ -23,11 +23,15 @@ class handler(BaseHTTPRequestHandler):
         forwarded_for = self.headers.get("x-forwarded-for")
         client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else self.client_address[0]
 
-        conn = get_connection()
+        conn = None
         try:
+            conn = get_connection()
             status_code, body = build_response(conn, target_name, page_group_id, client_ip)
+        except Exception:
+            status_code, body = 500, {"error": "internal_error"}
         finally:
-            conn.close()
+            if conn is not None:
+                conn.close()
 
         self._respond(status_code, body)
 
