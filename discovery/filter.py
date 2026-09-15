@@ -5,6 +5,18 @@ BUILTIN_NAMES = set(dir(builtins))
 
 
 def is_runnable_candidate(code: str) -> bool:
+    """Heuristic: does this snippet import something and resolve every name it uses?
+
+    Names are classified by `ctx` in a single walk. Every binding form that
+    produces a `Name` with `ctx=Store`/`Del` — plain assignment, annotated and
+    augmented assignment, `for` targets, `with`/`async with` `as` targets,
+    comprehension targets, walrus — is therefore covered by one rule, and only
+    binders that produce no such `Name` node need explicit handling below.
+
+    Reading `ctx` also fixes a false positive: in `obj.field = x` the store
+    target is an `Attribute`, and `obj` inside it is a `Load`, so `obj` counts
+    as used rather than defined.
+    """
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -14,56 +26,31 @@ def is_runnable_candidate(code: str) -> bool:
     defined_names: set[str] = set()
     used_names: set[str] = set()
 
-    class Visitor(ast.NodeVisitor):
-        def visit_Import(self, node):
-            nonlocal has_import
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            if isinstance(node.ctx, (ast.Store, ast.Del)):
+                defined_names.add(node.id)
+            elif isinstance(node.ctx, ast.Load):
+                used_names.add(node.id)
+        elif isinstance(node, ast.Import):
             has_import = True
             for alias in node.names:
                 defined_names.add((alias.asname or alias.name).split(".")[0])
-            self.generic_visit(node)
-
-        def visit_ImportFrom(self, node):
-            nonlocal has_import
+        elif isinstance(node, ast.ImportFrom):
             has_import = True
             for alias in node.names:
                 defined_names.add(alias.asname or alias.name)
-            self.generic_visit(node)
-
-        def visit_Assign(self, node):
-            for target in node.targets:
-                for name_node in ast.walk(target):
-                    if isinstance(name_node, ast.Name):
-                        defined_names.add(name_node.id)
-            self.generic_visit(node)
-
-        def visit_FunctionDef(self, node):
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            # A def/class statement binds its own name in the enclosing scope.
             defined_names.add(node.name)
-            self.generic_visit(node)
-
-        def visit_ClassDef(self, node):
-            defined_names.add(node.name)
-            self.generic_visit(node)
-
-        def visit_For(self, node):
-            for name_node in ast.walk(node.target):
-                if isinstance(name_node, ast.Name):
-                    defined_names.add(name_node.id)
-            self.generic_visit(node)
-
-        def visit_With(self, node):
-            for item in node.items:
-                if item.optional_vars:
-                    for name_node in ast.walk(item.optional_vars):
-                        if isinstance(name_node, ast.Name):
-                            defined_names.add(name_node.id)
-            self.generic_visit(node)
-
-        def visit_Name(self, node):
-            if isinstance(node.ctx, ast.Load):
-                used_names.add(node.id)
-            self.generic_visit(node)
-
-    Visitor().visit(tree)
+        elif isinstance(node, ast.arg):
+            # Covers positional, keyword-only, *args, **kwargs and lambda args.
+            defined_names.add(node.arg)
+        elif isinstance(node, ast.ExceptHandler):
+            if node.name is not None:
+                defined_names.add(node.name)
+        elif isinstance(node, (ast.Global, ast.Nonlocal)):
+            defined_names.update(node.names)
 
     if not has_import:
         return False
