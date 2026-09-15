@@ -15,11 +15,25 @@ Arize Phoenix second. See the design spec for full context.
 
 `docker compose up -d` mounts `schema/` into the container's
 `/docker-entrypoint-initdb.d`, and the postgres image runs every `.sql` file
-found there the first time a database volume is created. The schema is
-therefore applied for you; there is no separate migrate step. After editing
+found there the first time a database volume is created. On a *fresh* volume the
+schema is therefore applied for you and there is no separate migrate step. On an
+already-provisioned database, see the next section. After editing
 `schema/001_init.sql`, recreate the volume to pick the change up:
 
     docker compose down -v && docker compose up -d
+
+## Applying a new schema migration to an existing database
+
+`docker-entrypoint-initdb.d` only runs on a *fresh* database volume. If you
+already have a running Postgres instance (a pre-existing local volume, or any
+hosted database), apply new schema files manually:
+
+    psql "$DATABASE_URL" -f schema/002_rate_limit.sql
+
+Do this once per new schema file added after your database was first created.
+Skipping it fails loudly: every `/api/check` request starts with a rate-limit
+lookup against the table `schema/002_rate_limit.sql` creates, so the endpoint
+returns 500 on every call until the file is applied.
 
 ## Run discovery manually
 
