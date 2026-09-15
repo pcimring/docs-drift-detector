@@ -60,17 +60,20 @@ def draft_and_verify_fix(
             if attempt == MAX_RETRIES:
                 return FixResult(verified=False, diff=None)
 
-    fixed_code = _extract_code(response.content[0].text)
-    result = execute_fn(fixed_code)
-    if result.status != "pass":
-        return FixResult(verified=False, diff=None)
+    try:
+        fixed_code = _extract_code(response.content[0].text)
+        result = execute_fn(fixed_code)
+        if result.status != "pass":
+            return FixResult(verified=False, diff=None)
 
-    diff_text = "".join(
-        difflib.unified_diff(
-            source_code.splitlines(keepends=True),
-            fixed_code.splitlines(keepends=True),
-            fromfile="original",
-            tofile="fixed",
+        diff_text = "".join(
+            difflib.unified_diff(
+                source_code.splitlines(keepends=True),
+                fixed_code.splitlines(keepends=True),
+                fromfile="original",
+                tofile="fixed",
+            )
         )
-    )
-    return FixResult(verified=True, diff=diff_text)
+        return FixResult(verified=True, diff=diff_text)
+    except Exception:
+        return FixResult(verified=False, diff=None)

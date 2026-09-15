@@ -72,3 +72,50 @@ def test_llm_failure_retries_once_then_gives_up_without_executing():
     assert result.diff is None
     assert client.messages.calls == 2
     assert executed == []
+
+
+class FakeMessageWithEmptyContent:
+    def __init__(self):
+        self.content = []
+
+
+class FakeMessagesReturningEmptyContent:
+    def __init__(self):
+        self.calls = 0
+
+    def create(self, **kwargs):
+        self.calls += 1
+        return FakeMessageWithEmptyContent()
+
+
+class FakeClientWithEmptyContent:
+    def __init__(self):
+        self.messages = FakeMessagesReturningEmptyContent()
+
+
+def test_malformed_response_with_empty_content_fails_gracefully():
+    client = FakeClientWithEmptyContent()
+
+    def fake_execute(code):
+        raise AssertionError("execute_fn should not be called")
+
+    result = draft_and_verify_fix(
+        "doc text", "NameError: boom", "print('broken')", fake_execute, llm_client=client
+    )
+
+    assert result.verified is False
+    assert result.diff is None
+
+
+def test_execute_fn_error_fails_gracefully():
+    client = FakeClient(["```python\nprint('fixed')\n```"])
+
+    def fake_execute(code):
+        raise RuntimeError("execution sandbox crashed")
+
+    result = draft_and_verify_fix(
+        "doc text", "NameError: boom", "print('broken')", fake_execute, llm_client=client
+    )
+
+    assert result.verified is False
+    assert result.diff is None
