@@ -6,7 +6,7 @@ import pytest
 
 from discovery.db import apply_schema
 
-SCHEMA_PATH = Path(__file__).parent.parent / "schema" / "001_init.sql"
+SCHEMA_DIR = Path(__file__).parent.parent / "schema"
 
 
 @pytest.fixture
@@ -18,6 +18,7 @@ def db_conn():
     with conn.cursor() as cur:
         cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
     conn.commit()
-    apply_schema(conn, SCHEMA_PATH)
+    for schema_path in sorted(SCHEMA_DIR.glob("*.sql")):
+        apply_schema(conn, schema_path)
     yield conn
     conn.close()

@@ -8,7 +8,7 @@ def test_schema_creates_expected_tables(db_conn):
             "WHERE table_schema = 'public' ORDER BY table_name"
         )
         tables = [row[0] for row in cur.fetchall()]
-    assert tables == ["catalog_entry", "run"]
+    assert tables == ["catalog_entry", "rate_limit_event", "run"]
 
 
 def test_get_connection_reads_database_url(monkeypatch):
