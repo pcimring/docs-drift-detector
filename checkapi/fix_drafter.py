@@ -1,4 +1,5 @@
 import difflib
+import logging
 import re
 from dataclasses import dataclass
 from typing import Callable, Optional
@@ -58,6 +59,7 @@ def draft_and_verify_fix(
             break
         except Exception:
             if attempt == MAX_RETRIES:
+                logging.getLogger(__name__).exception("LLM call failed after retry")
                 return FixResult(verified=False, diff=None)
 
     try:
@@ -76,4 +78,5 @@ def draft_and_verify_fix(
         )
         return FixResult(verified=True, diff=diff_text)
     except Exception:
+        logging.getLogger(__name__).exception("Fix drafting extraction/execution failed")
         return FixResult(verified=False, diff=None)

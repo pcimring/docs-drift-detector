@@ -1,4 +1,5 @@
 import json
+import logging
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
@@ -28,6 +29,11 @@ class handler(BaseHTTPRequestHandler):
             conn = get_connection()
             status_code, body = build_response(conn, target_name, page_group_id, client_ip)
         except Exception:
+            logging.getLogger(__name__).exception(
+                "Unhandled error in check endpoint (page_group_id=%s, target=%s)",
+                page_group_id,
+                target_name,
+            )
             status_code, body = 500, {"error": "internal_error"}
         finally:
             if conn is not None:
