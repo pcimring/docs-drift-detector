@@ -33,12 +33,18 @@ def test_fetch_page_text_builds_correct_request(monkeypatch):
 
 
 def test_fetch_page_text_adds_auth_header_when_token_set(monkeypatch):
-    monkeypatch.setattr(
-        "checkapi.github_source.requests.get", lambda url, headers=None, timeout=None: FakeResponse("x")
-    )
+    captured = {}
+
+    def fake_get(url, headers=None, timeout=None):
+        captured["headers"] = headers
+        return FakeResponse("x")
+
+    monkeypatch.setattr("checkapi.github_source.requests.get", fake_get)
     monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
 
     fetch_page_text("langchain-ai/docs", "docs/quickstart.mdx")
+
+    assert captured["headers"]["Authorization"] == "Bearer secret-token"
 
 
 def test_fetch_page_text_raises_on_http_error(monkeypatch):
