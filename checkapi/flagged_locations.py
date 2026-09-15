@@ -25,9 +25,10 @@ def find_flagged_locations(page_text: str, identifier: str | None, exclude_block
     exclude_block_stripped = exclude_block.strip()
     exclude_line_range = None
 
-    # Find where the exclude_block appears in page_text
+    # Find where the exclude_block appears in page_text (use rfind to get the LAST occurrence,
+    # which is the current snippet being checked, since snippets are processed in order)
     if exclude_block_stripped:
-        match_index = page_text.find(exclude_block_stripped)
+        match_index = page_text.rfind(exclude_block_stripped)
         if match_index != -1:
             # Count lines before the match
             lines_before = page_text[:match_index].count('\n')
