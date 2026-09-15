@@ -115,3 +115,36 @@ print(f"env_value:{val}")
     result = execute_snippet(code, env={"TEST_CUSTOM_VAR": "my_test_value"})
     assert result.status == "pass"
     assert "env_value:my_test_value" in result.stdout
+
+
+def test_execute_snippet_does_not_leak_host_secrets(monkeypatch):
+    # Executed snippets must not see the tool's own credentials.
+    monkeypatch.setenv("DATABASE_URL", "postgresql://secret-host/secret-db")
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_supersecret")
+
+    code = """
+import os
+print("keys:" + ",".join(sorted(os.environ)))
+print("db:" + os.environ.get("DATABASE_URL", "ABSENT"))
+print("gh:" + os.environ.get("GITHUB_TOKEN", "ABSENT"))
+"""
+    result = execute_snippet(code)
+
+    assert result.status == "pass"
+    assert "db:ABSENT" in result.stdout
+    assert "gh:ABSENT" in result.stdout
+    assert "secret-db" not in result.stdout
+    assert "ghp_supersecret" not in result.stdout
+
+
+def test_execute_snippet_passes_through_allowlisted_provider_key(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-allowlisted")
+
+    code = """
+import os
+print("openai:" + os.environ.get("OPENAI_API_KEY", "ABSENT"))
+"""
+    result = execute_snippet(code)
+
+    assert result.status == "pass"
+    assert "openai:sk-test-allowlisted" in result.stdout

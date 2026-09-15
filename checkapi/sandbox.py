@@ -9,6 +9,22 @@ from pathlib import Path
 EXECUTION_TIMEOUT_SECONDS = 30
 INSTALL_TIMEOUT_SECONDS = 60
 
+# Snippets executed here are doc-page code, and the fix-drafting path executes
+# LLM output derived from third-party doc text. The child process therefore gets
+# an explicit allowlist rather than a copy of the host environment, so the
+# tool's own credentials (DATABASE_URL, GITHUB_TOKEN, ...) are never visible to
+# it. Provider keys stay on the list because some doc snippets legitimately call
+# those providers directly.
+_PASSTHROUGH_ENV_VARS = (
+    "PATH",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "TMPDIR",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+)
+
 TRANSIENT_ERROR_PATTERN = re.compile(
     r"RateLimitError|Timeout|ConnectionError|APIConnectionError|"
     r"Service Unavailable|"
@@ -56,7 +72,7 @@ def execute_snippet(
         f.write(code)
         script_path = f.name
 
-    run_env = dict(os.environ)
+    run_env = {key: os.environ[key] for key in _PASSTHROUGH_ENV_VARS if key in os.environ}
     if env:
         run_env.update(env)
     if extra_sys_path is not None:
