@@ -26,7 +26,7 @@ def test_check_page_end_to_end_pass_and_verified_fix(monkeypatch, db_conn):
     monkeypatch.setattr(orchestrator, "load_target", lambda name: FakeTarget())
     monkeypatch.setattr(orchestrator.github_source, "fetch_page_text", lambda repo, path: PAGE_TEXT)
 
-    def fake_run_in_sandbox(code):
+    def fake_run_in_sandbox(code, install_cache=None):
         from checkapi.sandbox import ExecutionResult
 
         if code == "print('works')":
