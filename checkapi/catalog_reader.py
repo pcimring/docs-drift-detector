@@ -12,7 +12,7 @@ def get_page_group(conn, page_group_id: str) -> list[CatalogRow]:
     with conn.cursor() as cur:
         cur.execute(
             "SELECT snippet_id, doc_page, snippet_text FROM catalog_entry "
-            "WHERE page_group_id = %s ORDER BY snippet_id",
+            "WHERE page_group_id = %s ORDER BY id",
             (page_group_id,),
         )
         rows = cur.fetchall()
