@@ -1,0 +1,41 @@
+name: Discovery job
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target name from config/targets.yaml"
+        required: true
+        default: "langchain"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out docs-drift-detector
+        uses: actions/checkout@v4
+        with:
+          path: docs-drift-detector
+
+      - name: Check out target docs repo
+        uses: actions/checkout@v4
+        with:
+          repository: langchain-ai/docs
+          path: target-docs
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: docs-drift-detector
+        run: pip install -r requirements.txt
+
+      - name: Run discovery job
+        working-directory: docs-drift-detector
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m discovery.main "${{ inputs.target || 'langchain' }}" "${{ github.workspace }}/target-docs"
