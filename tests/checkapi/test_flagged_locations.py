@@ -35,3 +35,28 @@ def test_find_flagged_locations_skips_the_already_checked_block():
 
 def test_find_flagged_locations_returns_empty_without_identifier():
     assert find_flagged_locations("old_call(x)\n", None, "") == []
+
+
+def test_find_flagged_locations_excludes_only_the_specific_block_position():
+    """
+    When the same line text appears in multiple places,
+    position-based exclusion ensures we exclude only the specific checked block,
+    not other occurrences of the same text elsewhere on the page.
+    This prevents silently dropping unverified duplicates.
+    """
+    page_text = (
+        "# First example:\n"
+        "old_call(x)\n"
+        "\n"
+        "# Full example to verify:\n"
+        "old_call(x)\n"
+        "print(result)\n"
+    )
+    # Only the second "old_call(x)" (with surrounding context) was catalogued and executed
+    exclude_block = "old_call(x)\nprint(result)\n"
+
+    flagged = find_flagged_locations(page_text, "old_call", exclude_block)
+
+    # Should return only line 2 (the first unchecked occurrence),
+    # not silently drop it because identical text exists in the exclude_block
+    assert flagged == [{"line": 2, "text": "old_call(x)"}]
