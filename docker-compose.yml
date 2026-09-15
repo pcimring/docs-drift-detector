@@ -7,3 +7,7 @@ services:
       POSTGRES_DB: docs_drift_test
     ports:
       - "5432:5432"
+    volumes:
+      # The postgres image runs every .sql file here on first start of a fresh
+      # volume, so schema/001_init.sql is applied automatically.
+      - ./schema:/docker-entrypoint-initdb.d

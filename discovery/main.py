@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from discovery.catalog import upsert_catalog_entries
 from discovery.config import load_target
 from discovery.db import get_connection
@@ -37,6 +39,7 @@ def discover(target_name: str, docs_repo_path: Path, conn) -> dict:
 
 
 def main():
+    load_dotenv()
     if len(sys.argv) != 3:
         print("Usage: python -m discovery.main <target_name> <docs_repo_path>")
         sys.exit(1)
@@ -53,8 +56,8 @@ def main():
     )
     if summary["pages_scanned"] == 0:
         print(
-            f"No pages were scanned under {docs_repo_path} — the docs checkout is "
-            "probably empty or wrong. Failing the run.",
+            f"No pages were scanned under {docs_repo_path}. The docs checkout is "
+            "probably empty or wrong, so this run is failing.",
             file=sys.stderr,
         )
         sys.exit(1)
