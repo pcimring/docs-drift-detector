@@ -10,6 +10,10 @@ on:
         required: true
         default: "langchain"
 
+# This job only reads the two repositories it checks out.
+permissions:
+  contents: read
+
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -22,6 +26,12 @@ jobs:
       - name: Check out target docs repo
         uses: actions/checkout@v4
         with:
+          # Hardcoded to the Round 1 target (LangChain). The `target` input
+          # above only selects which config/targets.yaml entry is read, not
+          # which repo is checked out. Before adding any second target to
+          # config/targets.yaml and dispatching it, make this dynamic or
+          # update it by hand, or the new target will be cataloged from
+          # LangChain's docs.
           repository: langchain-ai/docs
           path: target-docs
 
@@ -36,6 +46,9 @@ jobs:
 
       - name: Run discovery job
         working-directory: docs-drift-detector
+        # Pass the dispatch input through env rather than interpolating it
+        # into the run: script, where it would be substituted as shell text.
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python -m discovery.main "${{ inputs.target || 'langchain' }}" "${{ github.workspace }}/target-docs"
+          TARGET: ${{ inputs.target || 'langchain' }}
+        run: python -m discovery.main "$TARGET" "$GITHUB_WORKSPACE/target-docs"
