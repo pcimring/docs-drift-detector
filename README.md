@@ -35,6 +35,42 @@ Skipping it fails loudly: every `/api/check` request starts with a rate-limit
 lookup against the table `schema/002_rate_limit.sql` creates, so the endpoint
 returns 500 on every call until the file is applied.
 
+## Deploying to Vercel
+
+Vercel's Python builder (as of CLI 59.16.0, `uv`-based) does not auto-detect
+`api/check.py`'s `handler` class the way earlier builders did. Two things
+`pyproject.toml` must declare, or the build fails:
+
+    [project]
+    name = "docs-drift-detector"
+    version = "0.1.0"
+    dependencies = [ ... ]  # mirror requirements.txt
+
+    [tool.vercel]
+    entrypoint = "api.check:handler"
+
+The `[tool.vercel]` entrypoint line alone isn't enough: `uv lock` also
+requires a valid PEP 621 `[project]` table, or the build fails with
+`No 'project' table found`. Once `pyproject.toml` exists, Vercel's build
+installs dependencies from it, not from `requirements.txt`.
+**The two files are separate manifests that must be kept in sync by hand.**
+`requirements.txt` still drives local dev (`pip install -r requirements.txt`);
+`pyproject.toml`'s `dependencies` list drives the Vercel build. Adding a new
+package means updating both. `pytest` is deliberately excluded from
+`pyproject.toml` since the deployed function doesn't need it.
+
+Beyond that, a working deploy needs:
+- The env vars in `.env.example` set in the Vercel project's Environment
+  Variables settings (`DATABASE_URL` pointing at a real Postgres instance,
+  plus `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GITHUB_TOKEN`; see that file's
+  comments for what each is for)
+- `schema/001_init.sql` and `schema/002_rate_limit.sql` applied to that
+  Postgres instance manually (see "Applying a new schema migration" above;
+  Vercel Postgres/Supabase don't run `docker-entrypoint-initdb.d`)
+- The discovery job run at least once against that same database, so the
+  catalog has rows for `/api/check` to check (see "Run discovery manually"
+  below)
+
 ## Run discovery manually
 
 Discovery reads its connection string from `DATABASE_URL`. The `cp .env.example
