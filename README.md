@@ -1,7 +1,7 @@
 # docs-drift-detector
 
 Portfolio demonstration of docs-drift detection, code-sample testing, and
-AI-assisted update drafting — built config-driven against LangChain first,
+AI-assisted update drafting, built config-driven against LangChain first,
 Arize Phoenix second. See the design spec for full context.
 
 ## Local dev

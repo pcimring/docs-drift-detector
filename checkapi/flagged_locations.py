@@ -27,7 +27,7 @@ def find_flagged_locations(page_text: str, identifier: str | None, exclude_block
 
     # Find where the exclude_block appears in page_text. The exclude_block parameter carries
     # no position info, so when its text appears more than once on the page, which occurrence
-    # was actually executed is ambiguous. rfind (last occurrence) is used by convention — this
+    # was actually executed is ambiguous. rfind (last occurrence) is used by convention, this
     # is a tiebreak, not a guarantee of correctness. Callers with position info should pass
     # it via wider exclude_block context if disambiguation matters.
     if exclude_block_stripped:

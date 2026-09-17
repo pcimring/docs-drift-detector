@@ -52,8 +52,8 @@ def check_snippet(
     snippet_text: str, page_text: str, install_cache: dict | None = None
 ) -> tuple[str, str | None, str | None, list]:
     def execute(code: str) -> ExecutionResult:
-        # Every execution on this snippet's behalf — the first run, the
-        # transient retry, and the fix re-verification — goes through here, so
+        # Every execution on this snippet's behalf (the first run, the
+        # transient retry, and the fix re-verification) goes through here, so
         # they all share one installed-package directory per package set.
         if install_cache is None:
             return run_in_sandbox(code)
