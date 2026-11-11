@@ -1,10 +1,96 @@
 # docs-drift-detector
 
-Portfolio demonstration of docs-drift detection, code-sample testing, and
-AI-assisted update drafting, built config-driven against LangChain first,
-Arize Phoenix second. See the design spec for full context.
+When a codebase changes and its docs do not, drift occurs. This tool looks for
+docs drift and attempts to address it.
 
-## Local dev
+The tool goes through a docs repo, runs each code sample, and reports the ones
+that fail. It also drafts a fix for each failure and checks that the updated
+sample runs without an error.
+
+Results and suggested fixes are saved to a database for human review.
+
+> [!CAUTION]
+> The tool does not check the output of a given code snippet. It only checks that it runs without errors.
+
+> [!CAUTION]
+> This project is a work in progress. See [Known gaps](#known-gaps).
+
+## How it works
+
+The tool checks one docs repo at a time. You list the
+target repos in `config/targets.yaml` (see [Add a target](#add-a-target)), and you
+name the target to check each time you run the tool.
+
+> [!NOTE]
+> `config/targets.yaml` comes with one target preconfigured, `langchain`, for
+> the [LangChain docs repo](https://github.com/langchain-ai/docs).
+
+The tool runs in 2 stages.
+
+### 1. Discovery
+
+A GitHub Actions job runs daily. It scans each `.mdx` page in the target's docs
+repo and extracts the Python code samples. It keeps only self-contained
+samples: each must import at least one package and define every name it uses.
+The job saves these samples to the `catalog_entry` table. It also removes
+samples saved on earlier runs that are no longer in the docs.
+
+### 2. Check
+
+The `/api/check` endpoint checks one docs page per request. You pass it the
+page's `page_group_id` from the `catalog_entry` table (see
+[Check a page](#check-a-page)). The endpoint fetches the current page text from
+GitHub. Then, for each sample on the page, it:
+
+1. Installs the packages the sample imports into a temporary directory.
+2. Runs the sample in a separate Python process.
+3. If the error looks temporary, such as a network error or a rate limit, runs
+   the sample once more.
+4. If the error is not temporary, sends the page text, the sample and the error
+   to Claude, which drafts a corrected sample.
+5. Runs the corrected sample, and keeps the fix only if it runs without an
+   error.
+6. If the error names a missing module, attribute or variable, flags other
+   places on the same page that use that name.
+
+Each sample ends with one status:
+
+| Status | Meaning |
+| --- | --- |
+| `pass` | The sample runs without an error. |
+| `fail` | The sample fails, and Claude drafted a fix that runs without an error. |
+| `unresolved` | The sample fails, and no drafted fix runs without an error. |
+| `timeout` | The sample did not finish in time. |
+| `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or the temporary error happened again. |
+
+The endpoint saves each result to the `run` table, with the error text, the
+flagged places (`flagged_locations`) and, for `fail`, the diff of the fix
+(`drafted_fix_diff`). To review the fixes:
+
+    SELECT snippet_id, error_text, drafted_fix_diff FROM run WHERE status = 'fail';
+
+## Known gaps
+
+- The tool does not apply fixes or open pull requests. Fixes are stored only
+  in the `run` table, and there is no review screen yet.
+- A sample passes if it runs without an error. The tool does not check the
+  sample's output, so a fix can pass and still be wrong.
+- LangChain is the only target. The daily discovery job checks out only the
+  LangChain docs repo.
+- The check endpoint uses `langchain` if you leave out `target`, and it does
+  not check that the page belongs to the target you pass.
+- There is no web frontend yet.
+
+## Prerequisites
+
+- Docker, to run the Postgres database
+- Python 3
+- Git, to clone the target's docs repo
+- An Anthropic API key, to draft fixes
+- An OpenAI API key, to run LangChain samples that call OpenAI
+- A GitHub token (optional), to raise the GitHub API rate limit
+
+## Run it locally
 
     docker compose up -d
     python3 -m venv .venv
@@ -13,84 +99,65 @@ Arize Phoenix second. See the design spec for full context.
     cp .env.example .env
     pytest
 
-`docker compose up -d` mounts `schema/` into the container's
-`/docker-entrypoint-initdb.d`, and the postgres image runs every `.sql` file
-found there the first time a database volume is created. On a *fresh* volume the
-schema is therefore applied for you and there is no separate migrate step. On an
-already-provisioned database, see the next section. After editing
-`schema/001_init.sql`, recreate the volume to pick the change up:
+`docker compose up -d` starts Postgres and creates the tables from `schema/`.
 
-    docker compose down -v && docker compose up -d
+In `.env`, set the keys you need:
 
-## Applying a new schema migration to an existing database
+| Variable | Purpose |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Drafts the fixes. |
+| `OPENAI_API_KEY` | Runs LangChain samples that call OpenAI directly. |
+| `GITHUB_TOKEN` | Optional. Raises the GitHub API rate limit for fetching docs pages. |
 
-`docker-entrypoint-initdb.d` only runs on a *fresh* database volume. If you
-already have a running Postgres instance (a pre-existing local volume, or any
-hosted database), apply new schema files manually:
+### Build the catalog
 
-    psql "$DATABASE_URL" -f schema/002_rate_limit.sql
+Clone the target's docs repo, then point discovery at it:
 
-Do this once per new schema file added after your database was first created.
-Skipping it fails loudly: every `/api/check` request starts with a rate-limit
-lookup against the table `schema/002_rate_limit.sql` creates, so the endpoint
-returns 500 on every call until the file is applied.
+    git clone https://github.com/langchain-ai/docs /path/to/langchain-docs
+    python -m discovery.main langchain /path/to/langchain-docs
 
-## Deploying to Vercel
+The command exits with an error if the path is not a directory or if it finds
+no pages.
 
-Vercel's Python builder (as of CLI 59.16.0, `uv`-based) does not auto-detect
-`api/check.py`'s `handler` class the way earlier builders did. Two things
-`pyproject.toml` must declare, or the build fails:
+### Check a page
 
-    [project]
-    name = "docs-drift-detector"
-    version = "0.1.0"
-    dependencies = [ ... ]  # mirror requirements.txt
+Each docs page has a `page_group_id` in the catalog:
 
-    [tool.vercel]
-    entrypoint = "api.check:handler"
+    SELECT DISTINCT doc_page, page_group_id FROM catalog_entry;
 
-The `[tool.vercel]` entrypoint line alone isn't enough: `uv lock` also
-requires a valid PEP 621 `[project]` table, or the build fails with
-`No 'project' table found`. Once `pyproject.toml` exists, Vercel's build
-installs dependencies from it, not from `requirements.txt`.
-**The two files are separate manifests that must be kept in sync by hand.**
-`requirements.txt` still drives local dev (`pip install -r requirements.txt`);
-`pyproject.toml`'s `dependencies` list drives the Vercel build. Adding a new
-package means updating both. `pytest` is deliberately excluded from
-`pyproject.toml` since the deployed function doesn't need it.
+Send that ID to the endpoint:
 
-Beyond that, a working deploy needs:
-- The env vars in `.env.example` set in the Vercel project's Environment
-  Variables settings (`DATABASE_URL` pointing at a real Postgres instance,
-  plus `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GITHUB_TOKEN`; see that file's
-  comments for what each is for)
-- `schema/001_init.sql` and `schema/002_rate_limit.sql` applied to that
-  Postgres instance manually (see "Applying a new schema migration" above;
-  Vercel Postgres/Supabase don't run `docker-entrypoint-initdb.d`)
-- The discovery job run at least once against that same database, so the
-  catalog has rows for `/api/check` to check (see "Run discovery manually"
-  below)
+    POST /api/check?page_group_id=<id>&target=<target>
 
-## Run discovery manually
+Pass the same target you used for discovery.
 
-Discovery reads its connection string from `DATABASE_URL`. The `cp .env.example
-.env` step above is enough, because the CLI loads `.env` at startup. To set it
-explicitly instead:
+The response summarizes the page:
 
-    export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/docs_drift_test
+    {"snippets_checked": 4, "pass": 3, "fail": 1, "unresolved": 0, "timeout": 0, "inconclusive": 0}
 
-Then point the job at a local checkout of the target's docs repo:
+The endpoint allows 10 requests per hour per client IP
+(`RATE_LIMIT_MAX_PER_HOUR`).
 
-    python -m discovery.main langchain /path/to/local/langchain-ai-docs-checkout
+## Deploy to Vercel
 
-The command exits non-zero if the path is not a directory, or if it scans zero
-pages, so a broken checkout fails instead of reporting an empty run as success.
+1. Set the variables from `.env.example` in the Vercel project, with
+   `DATABASE_URL` pointing at a hosted Postgres database.
+2. Apply the files in `schema/` to that database, in order:
 
-## Adding a new target
+       psql "$DATABASE_URL" -f schema/001_init.sql
+       psql "$DATABASE_URL" -f schema/002_rate_limit.sql
 
-`config/targets.yaml` holds one entry per target. The `target` input on
-`.github/workflows/discovery.yml` only selects which entry is *read*. The
-docs repo that workflow *checks out* is still hardcoded to
-`langchain-ai/docs`. Update that checkout step alongside any new
-`targets.yaml` entry, or the new target will be cataloged from LangChain's
-docs under the wrong `target_project`.
+3. Run discovery once against the same database, so the endpoint has samples
+   to check.
+
+Vercel installs dependencies from `pyproject.toml`, and local runs use
+`requirements.txt`. Keep the two lists in sync when you add a package.
+
+## Add a target
+
+Add an entry to `config/targets.yaml` with the docs repo, the code repo and the
+language.
+
+## Contact
+
+To report a bug or suggest a feature, [open an issue](https://github.com/pcimring/docs-drift-detector/issues). For anything else, contact me on [LinkedIn](https://www.linkedin.com/in/peter-cimring).
