@@ -56,7 +56,7 @@ To run discovery and check, see [Run it locally](#run-it-locally).
 
 ## Requirements for a docs repo
 
-The tool is designed to work with any docs repo on GitHub. Today, a target must meet these requirements:
+A target can be any docs repo on GitHub that meets these requirements:
 
 - Pages are `.mdx` files. Discovery does not read `.md` or `.rst` files.
 - Code samples are written in Python.
