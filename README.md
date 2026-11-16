@@ -68,6 +68,7 @@ A target can be any docs repo on GitHub that meets the following requirements:
 - Only Python code samples in `.mdx` pages are supported. Discovery does not read `.md` or `.rst` files. It also drops samples in other languages. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
 - Samples are not isolated. Check runs them on your machine in a separate Python process, not in a container.
 - A sample passes if it runs without an error. The tool does not check the sample's output, so a fix can pass and still be wrong.
+- The tool runs locally only. A future version will include support for deploying to Vercel.
 - There is no web frontend yet. Results and drafted fixes are stored only in the database. See [Review the results](#review-the-results).
 - The tool does not apply fixes or open pull requests. You review each drafted fix and apply it yourself.
 
@@ -81,6 +82,9 @@ A target can be any docs repo on GitHub that meets the following requirements:
 - A GitHub token (optional), to raise the GitHub API rate limit
 
 ## Run it locally
+
+> [!NOTE]
+> This version runs locally only. A future version will include support for deploying to Vercel.
 
 > [!WARNING]
 > Check runs code from the target's docs on your machine. Each sample runs in a separate Python process, not in a container. Run the tool only against docs repos you trust.
@@ -160,7 +164,7 @@ Until there is a web frontend, the results are in the database. The tool uses 3 
 | --- | --- |
 | `catalog_entry` | One row per sample that discovery found, with its page (`doc_page`) and `page_group_id`. |
 | `run` | One row per checked sample, with its status, the error text, the flagged places (`flagged_locations`) and, for `fail`, the diff of the fix (`drafted_fix_diff`). |
-| `rate_limit_event` | Requests to the check endpoint, used for rate limiting. |
+| `rate_limit_event` | Requests to the hosted check endpoint, used for rate limiting. |
 
 To open a SQL prompt:
 
@@ -190,34 +194,6 @@ SELECT snippet_id, error_text, drafted_fix_diff FROM run WHERE status = 'fail';
 ```bash
 pytest
 ```
-
-## Deploy to Vercel
-
-The repo deploys to Vercel as an API endpoint that runs check. To deploy it:
-
-1. Set the variables from `.env.example` in the Vercel project, with `DATABASE_URL` pointing at a hosted Postgres database.
-2. Apply the files in `schema/` to that database, in order:
-
-   ```bash
-   psql "$DATABASE_URL" -f schema/001_init.sql
-   psql "$DATABASE_URL" -f schema/002_rate_limit.sql
-   ```
-
-3. Run discovery once against the same database, so the endpoint has samples to check.
-
-The endpoint takes the same input as the local command:
-
-```
-POST /api/check?page_group_id=<page_group_id>&target=langchain
-```
-
-It returns the same summary, and allows 10 requests per hour per client IP (`RATE_LIMIT_MAX_PER_HOUR`).
-
-Vercel installs dependencies from `pyproject.toml`, and local runs use `requirements.txt`. Keep the two lists in sync when you add a package.
-
-### Run discovery on a schedule
-
-The workflow in `.github/workflows/discovery.yml` runs discovery every day, and you can also start it by hand from the repo's Actions tab. It needs a repository secret, `DATABASE_URL`, pointing at the hosted database.
 
 ## Add a target
 
