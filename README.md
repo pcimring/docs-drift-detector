@@ -2,7 +2,7 @@
 
 When a codebase changes and its docs do not, drift occurs. This tool looks for docs drift and attempts to address it.
 
-The tool goes through a docs repo, runs each Python code sample, and reports the ones that fail. It also drafts a fix for each failure and checks that the updated sample runs without an error.
+The tool goes through a docs repo, runs each **Python** code sample, and reports the ones that fail. It also drafts a fix for each failure and checks that the updated sample runs without an error.
 
 Results and suggested fixes are saved to a database for human review.
 
@@ -10,7 +10,7 @@ Results and suggested fixes are saved to a database for human review.
 > The tool does not check a sample's output. It only checks that the sample runs without an error.
 
 > [!NOTE]
-> This project is a work in progress. Currently only Python code samples are supported. See [Known gaps and limitations](#known-gaps-and-limitations).
+> Currently only Python code samples are supported. See [Known gaps and limitations](#known-gaps-and-limitations).
 
 ## How it works
 
