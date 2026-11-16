@@ -30,13 +30,13 @@ The docs repo that the tool checks is called the target. You [list the targets](
 
 ### Discovery
 
-You run discovery from the command line, against a local copy (clone) of the target's docs repo. It can also run on a schedule through GitHub Actions.
+You run discovery against a local clone of the target docs repo. You can run it from the command line, or schedule it to run as a GitHub Action.
 
-Discovery scans each `.mdx` page and extracts the Python code samples. It keeps only self-contained samples: each must import at least one package and define every name it uses. It saves these samples to the database, and removes samples saved on earlier runs that are no longer in the docs.
+Discovery scans each `.mdx` page and extracts the Python code samples. It keeps only self-contained samples: each must import at least one package and define every name it uses. It saves these samples to the `catalog_entry` table in the database, and removes samples saved on earlier runs that are no longer in the docs.
 
 ### Check
 
-You run check from the command line, one docs page at a time. Once the tool is deployed to Vercel, you can also run it through an API endpoint.
+You run check from the command line. It works through the samples that discovery saved to the `catalog_entry` table, one docs page at a time.
 
 Check fetches the current version of the page from GitHub and runs each sample on it. When a sample fails, check sends the sample, the error and the page to Claude, which drafts a fix. Check runs the fix and keeps it only if it runs without an error. It also flags other places on the page that use the same broken name.
 
@@ -50,7 +50,7 @@ Each sample ends with one status:
 | `timeout` | The sample did not finish in time. |
 | `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or a temporary error, such as a network error, happened twice in a row. |
 
-Check saves each result to the database. See [Review the results](#review-the-results).
+Check saves each result to the `run` table in the database. See [Review the results](#review-the-results).
 
 To run discovery and check, see [Run it locally](#run-it-locally).
 
