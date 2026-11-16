@@ -66,6 +66,7 @@ A target can be any docs repo on GitHub that meets the following requirements:
 ## Known gaps and limitations
 
 - Only Python code samples in `.mdx` pages are supported. Discovery does not read `.md` or `.rst` files and drops samples in other languages, and check runs samples only with Python. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
+- Samples are not isolated. Check runs them on your machine in a separate Python process, not in a container.
 - A sample passes if it runs without an error. The tool does not check the sample's output, so a fix can pass and still be wrong.
 - There is no web frontend yet. Results and drafted fixes are stored only in the database. See [Review the results](#review-the-results).
 - The tool does not apply fixes or open pull requests. You review each drafted fix and apply it yourself.
