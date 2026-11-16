@@ -203,4 +203,4 @@ Add an entry to `config/targets.yaml` with the docs repo, the code repo and the 
 
 ## Contact
 
-To report a bug or suggest a feature, [open an issue](https://github.com/pcimring/docs-drift-detector/issues). For anything else, contact me on [LinkedIn](https://www.linkedin.com/in/peter-cimring).
+To report a bug or suggest a feature, [open an issue](https://github.com/pcimring/docs-drift-detector/issues). For anything else, reach out via [LinkedIn](https://www.linkedin.com/in/peter-cimring).
