@@ -10,7 +10,7 @@ Results and suggested fixes are saved to a database for human review.
 > The tool does not check a sample's output. It only checks that the sample runs without an error.
 
 > [!NOTE]
-> Currently only Python code samples are supported. See [Known gaps and limitations](#known-gaps-and-limitations).
+> Currently only Python code samples in `.mdx` pages are supported. See [Known gaps and limitations](#known-gaps-and-limitations).
 
 ## How it works
 
@@ -66,7 +66,7 @@ The tool is designed to work with any docs repo on GitHub. Today, a target must 
 
 ## Known gaps and limitations
 
-- Only Python code samples are supported. Discovery drops samples in other languages, and check runs samples only with Python. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
+- Only Python code samples in `.mdx` pages are supported. Discovery does not read `.md` or `.rst` files and drops samples in other languages, and check runs samples only with Python. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
 - The tool does not apply fixes or open pull requests. Fixes are stored only in the `run` table, and there is no review screen yet.
 - A sample passes if it runs without an error. The tool does not check the sample's output, so a fix can pass and still be wrong.
 - LangChain is the only target so far. The scheduled discovery job checks out only the LangChain docs repo.
