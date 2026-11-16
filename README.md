@@ -56,7 +56,7 @@ To run discovery and check, see [Run it locally](#run-it-locally).
 
 ## Requirements for a docs repo
 
-A target can be any docs repo on GitHub that meets these requirements:
+A target can be any docs repo on GitHub that meets the following requirements:
 
 - Pages are `.mdx` files. Discovery does not read `.md` or `.rst` files.
 - Code samples are written in Python.
@@ -66,12 +66,9 @@ A target can be any docs repo on GitHub that meets these requirements:
 ## Known gaps and limitations
 
 - Only Python code samples in `.mdx` pages are supported. Discovery does not read `.md` or `.rst` files and drops samples in other languages, and check runs samples only with Python. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
-- The tool does not apply fixes or open pull requests. Fixes are stored only in the `run` table, and there is no review screen yet.
 - A sample passes if it runs without an error. The tool does not check the sample's output, so a fix can pass and still be wrong.
-- LangChain is the only target so far. The scheduled discovery job checks out only the LangChain docs repo.
-- The check endpoint uses `langchain` if you leave out `target`, and it does not check that the page belongs to the target you pass.
-- The tests use the same database as local runs, and they delete its data. See [Run the tests](#run-the-tests).
-- There is no web frontend yet.
+- There is no web frontend yet. Results and drafted fixes are stored only in the database. See [Review the results](#review-the-results).
+- The tool does not apply fixes or open pull requests. You review each drafted fix and apply it yourself.
 
 ## Prerequisites
 
