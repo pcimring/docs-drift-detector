@@ -40,8 +40,6 @@ You run check from the command line, one docs page at a time. Once the tool is d
 
 Check fetches the current version of the page from GitHub and runs each sample on it. When a sample fails, check sends the sample, the error and the page to Claude, which drafts a fix. Check runs the fix and keeps it only if it runs without an error. It also flags other places on the page that use the same broken name.
 
-To run discovery and check, see [Run it locally](#run-it-locally).
-
 Each sample ends with one status:
 
 | Status | Meaning |
@@ -50,9 +48,11 @@ Each sample ends with one status:
 | `fail` | The sample fails, and Claude drafted a fix that runs without an error. |
 | `unresolved` | The sample fails, and no drafted fix runs without an error. |
 | `timeout` | The sample did not finish in time. |
-| `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or a network error happened twice in a row. |
+| `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or a temporary error, such as a network error, happened twice in a row. |
 
 Check saves each result to the database. See [Review the results](#review-the-results).
+
+To run discovery and check, see [Run it locally](#run-it-locally).
 
 ## Requirements for a docs repo
 
