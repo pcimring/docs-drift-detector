@@ -2,7 +2,7 @@
 
 When a codebase changes and its docs do not, drift occurs. This tool looks for docs drift and attempts to address it.
 
-The tool goes through a docs repo, runs each code sample, and reports the ones that fail. It also drafts a fix for each failure and checks that the updated sample runs without an error.
+The tool goes through a docs repo, runs each Python code sample, and reports the ones that fail. It also drafts a fix for each failure and checks that the updated sample runs without an error.
 
 Results and suggested fixes are saved to a database for human review.
 
@@ -10,7 +10,7 @@ Results and suggested fixes are saved to a database for human review.
 > The tool does not check a sample's output. It only checks that the sample runs without an error.
 
 > [!NOTE]
-> This project is a work in progress. See [Known gaps](#known-gaps).
+> This project is a work in progress. Currently only Python code samples are supported. See [Known gaps and limitations](#known-gaps-and-limitations).
 
 ## How it works
 
@@ -64,8 +64,9 @@ The tool is designed to work with any docs repo on GitHub. Today, a target must 
 - Each package installs under the name it is imported as. For example, `import langchain_openai` installs `langchain-openai`. The exceptions are listed in `checkapi/imports.py`. A package that installs under a different name, such as `sklearn` (`scikit-learn`), fails to install, and its samples end as `inconclusive`.
 - Samples call only OpenAI or Anthropic. Samples receive only the `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables, so a sample that needs another service's key fails.
 
-## Known gaps
+## Known gaps and limitations
 
+- Only Python code samples are supported. Discovery drops samples in other languages, and check runs samples only with Python. See also [Requirements for a docs repo](#requirements-for-a-docs-repo).
 - The tool does not apply fixes or open pull requests. Fixes are stored only in the `run` table, and there is no review screen yet.
 - A sample passes if it runs without an error. The tool does not check the sample's output, so a fix can pass and still be wrong.
 - LangChain is the only target so far. The scheduled discovery job checks out only the LangChain docs repo.
