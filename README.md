@@ -201,6 +201,10 @@ Add an entry to `config/targets.yaml` with the docs repo, the code repo and the 
 > [!NOTE]
 > Currently the language setting supports Python only. A future version will include other languages.
 
+## About
+
+I'm Peter Cimring, a documentation engineer and builder. I build tools that help keep docs accurate, and I contribute to the open-source docs I use. More of my projects are at [petercimring.space](https://petercimring.space).
+
 ## Contact
 
 To report a bug or suggest a feature, [open an issue](https://github.com/pcimring/docs-drift-detector/issues). For anything else, reach out via [LinkedIn](https://www.linkedin.com/in/peter-cimring).
