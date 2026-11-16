@@ -30,7 +30,7 @@ The docs repo that the tool checks is called the target. You [list the targets](
 
 ### Discovery
 
-You run discovery against a local clone of the target docs repo. You can run it from the command line, or schedule it to run as a GitHub Action.
+You run discovery from the command line, against a local clone of the target docs repo.
 
 Discovery scans each `.mdx` page and extracts the Python code samples. It keeps only self-contained samples: each must import at least one package and define every name it uses. It saves these samples to the `catalog_entry` table in the database, and removes samples saved on earlier runs that are no longer in the docs.
 
@@ -158,13 +158,12 @@ A target can be any docs repo on GitHub that meets the following requirements:
 
 ## Review the results
 
-Until there is a web frontend, the results are in the database. The tool uses 3 tables:
+Until there is a web frontend, the results are in the database, in 2 tables:
 
 | Table | Contents |
 | --- | --- |
 | `catalog_entry` | One row per sample that discovery found, with its page (`doc_page`) and `page_group_id`. |
 | `run` | One row per checked sample, with its status, the error text, the flagged places (`flagged_locations`) and, for `fail`, the diff of the fix (`drafted_fix_diff`). |
-| `rate_limit_event` | Requests to the hosted check endpoint, used for rate limiting. |
 
 To open a SQL prompt:
 
@@ -197,7 +196,10 @@ pytest
 
 ## Add a target
 
-Add an entry to `config/targets.yaml` with the docs repo, the code repo and the language. Check first that the docs repo meets the [requirements](#requirements-for-a-docs-repo).
+Add an entry to `config/targets.yaml` with the docs repo, the code repo and the language, which must be Python. Check first that the docs repo meets the [requirements](#requirements-for-a-docs-repo).
+
+> [!NOTE]
+> Currently the language setting supports Python only. A future version will include other languages.
 
 ## Contact
 
