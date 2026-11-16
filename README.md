@@ -30,18 +30,17 @@ The docs repo that the tool checks is called the target. You [list the targets](
 
 ### Discovery
 
-Discovery scans each `.mdx` page in the target's docs repo and extracts the Python code samples. It keeps only self-contained samples: each must import at least one package and define every name it uses. It saves these samples to the `catalog_entry` table, and removes samples saved on earlier runs that are no longer in the docs.
+You run discovery from the command line, against a local copy (clone) of the target's docs repo. It can also run on a schedule through GitHub Actions.
+
+Discovery scans each `.mdx` page and extracts the Python code samples. It keeps only self-contained samples: each must import at least one package and define every name it uses. It saves these samples to the database, and removes samples saved on earlier runs that are no longer in the docs.
 
 ### Check
 
-Check works on one page at a time, identified by the page's `page_group_id` from the `catalog_entry` table. It fetches the current page text from GitHub. Then, for each sample on the page, it:
+You run check from the command line, one docs page at a time. Once the tool is deployed to Vercel, you can also run it through an API endpoint.
 
-1. Installs the packages the sample imports into a temporary directory.
-2. Runs the sample in a separate Python process.
-3. If the error looks temporary, such as a network error or a rate limit, runs the sample once more.
-4. If the error is not temporary, sends the page text, the sample and the error to Claude, which drafts a corrected sample.
-5. Runs the corrected sample, and keeps the fix only if it runs without an error.
-6. If the error names a missing module, attribute or variable, flags other places on the same page that use that name.
+Check fetches the current version of the page from GitHub and runs each sample on it. When a sample fails, check sends the sample, the error and the page to Claude, which drafts a fix. Check runs the fix and keeps it only if it runs without an error. It also flags other places on the page that use the same broken name.
+
+To run discovery and check, see [Run it locally](#run-it-locally).
 
 Each sample ends with one status:
 
@@ -51,9 +50,9 @@ Each sample ends with one status:
 | `fail` | The sample fails, and Claude drafted a fix that runs without an error. |
 | `unresolved` | The sample fails, and no drafted fix runs without an error. |
 | `timeout` | The sample did not finish in time. |
-| `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or the temporary error happened again. |
+| `inconclusive` | The check could not run. For example, a package failed to install, the page could not be fetched, or a network error happened twice in a row. |
 
-Check saves each result to the `run` table. See [Review the results](#review-the-results).
+Check saves each result to the database. See [Review the results](#review-the-results).
 
 ## Requirements for a docs repo
 
