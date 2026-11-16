@@ -26,7 +26,7 @@ Discovery builds the list, and check works through it one page at a time.
 The docs repo that the tool checks is called the target. You [list the targets](#add-a-target) in `config/targets.yaml`, and you name the target each time you run the tool.
 
 > [!NOTE]
-> For convenience, `config/targets.yaml` is pre-configured to target the [LangChain docs repo](https://github.com/langchain-ai/docs). You can replace this default target and/or add additional targets. (Note: the docs repo must use `.mdx` files and contain Python code snippets - see: [Known gaps and limitations](#known-gaps-and-limitations))
+> For convenience, `config/targets.yaml` is preconfigured to target the [LangChain docs repo](https://github.com/langchain-ai/docs). You can replace this default target or add more targets. Each docs repo must use `.mdx` files and contain Python code samples. See [Known gaps and limitations](#known-gaps-and-limitations).
 
 ### Discovery
 
